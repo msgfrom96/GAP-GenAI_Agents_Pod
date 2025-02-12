@@ -1,0 +1,16 @@
+[flake8]
+max-line-length = 127
+exclude =
+    .git,
+    __pycache__,
+    docs/source/conf.py,
+    dist,
+    build,
+    venv
+
+ignore =
+    E203,  # Whitespace before ':' (handled by Black)
+    E501,  # Line too long (handled by Black)
+    W503   # Line break before binary operator
+max-complexity = 10
+select = B,C,E,F,W,T4, 

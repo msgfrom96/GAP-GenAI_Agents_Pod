@@ -1,0 +1,74 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "genai_agents"
+version = "0.1.0"
+description = "AI-powered code maintenance agent with MLOps capabilities"
+authors = [
+    {name = "Your Name", email = "your.email@example.com"}
+]
+dependencies = [
+    "openai>=1.0.0",
+    "google-generativeai>=0.3.0",
+    "langchain>=0.1.0",
+    "langchain-core>=0.1.0",
+    "langgraph>=0.0.1",
+    "numpy>=1.24.0",
+    "pandas>=2.0.0",
+    "scikit-learn>=1.0.0",
+    "tensorflow>=2.16.1",
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-asyncio>=0.23.0",
+    "pydantic>=2.0.0",
+    "PyGithub>=2.0.0",
+    "APScheduler>=3.10.0",
+    "prometheus-client>=0.17.0",
+    "cryptography>=41.0.0",
+    "bleach>=6.0.0",
+    "PyYAML>=6.0.0"
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "--cov=src/genai_agents --import-mode=importlib"
+pythonpath = [".", "src"]
+asyncio_mode = "strict"
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.coverage.run]
+source = ["src/genai_agents"]
+omit = ["tests/*"]
+
+[tool.black]
+line-length = 127
+target-version = ['py39']  # Specify your Python version
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+  | venv
+  | .pytest_cache
+  | .ruff_cache
+  | .mypy_cache
+  | .ruff_cache
+  | .mypy_cache
+  | .ruff_cache
+  | .mypy_cache
+  | .coverage
+  | .cursor
+  | .cursorignore
+)/
+''' 

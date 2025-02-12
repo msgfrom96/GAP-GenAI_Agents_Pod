@@ -1,0 +1,194 @@
+---
+description: 
+globs: 
+---
+## Coding Rules and Guidelines
+
+
+# Mission, Vision, and Use Case (Defining Requirements)
+
+## Mission (The "Why")
+To create an AI-powered code maintenance agent that proactively identifies and helps resolve potential issues in a codebase, reducing technical debt and improving software quality. This is not just a reactive tool; it should anticipate problems.
+
+## Vision (The "What")
+A fully automated system that integrates with a code repository (starting with GitHub), continuously monitors code changes, performs static and dynamic analysis, leverages AI for intelligent insights, and provides actionable recommendations (and potentially automated fixes) to developers. The system should be highly configurable, scalable, and reliable.
+
+## Use Case (The "How")
+- **Continuous Monitoring**: The agent runs on a schedule (or is triggered by events like commits) and monitors a designated GitHub repository.
+- **Code Analysis**:
+  - **Static Analysis**: Identifies deprecated functions, security vulnerabilities (e.g., using bandit or similar tools), code style violations (e.g., using pylint, flake8), and potential bugs.
+  - **Dynamic Analysis**: Executes the code (in a sandboxed environment) and monitors its behavior, including performance metrics, resource usage, and potential runtime errors.
+  - **Dependency Analysis**: Checks for outdated or vulnerable dependencies.
+  - **Documentation Analysis**: Assesses the quality and completeness of documentation.
+  - **Test Coverage Analysis**: Measures test coverage and identifies areas with insufficient testing.
+- **AI-Powered Insights**:
+  - Uses language models (like Gemini, OpenAI) to identify complex patterns, predict potential issues, and suggest improvements.
+  - Learns from past code changes and their impact.
+- **Actionable Recommendations**:
+  - Creates GitHub issues with clear descriptions of the problems and suggested solutions.
+  - Provides code snippets for potential fixes.
+  - Prioritizes issues based on severity and impact.
+- **Automated Fixes (Optional, Advanced)**: For certain types of issues (e.g., updating deprecated functions, fixing code style violations), the agent can automatically create pull requests with the necessary changes.
+- **Configuration**: All aspects of the agent (repository, analysis rules, AI models, notification settings) should be configurable through a configuration file (and potentially a web UI).
+- **Scalability**: The system should be able to handle large codebases and multiple repositories.
+- **Reliability**: The agent itself must be robust, well-tested, and fault-tolerant.
+This document defines the coding standards and best practices to be followed in this project. Adherence to these guidelines will ensure code quality, maintainability, and reliability.
+
+**I. Core Coding Practices:**
+
+1.  **Error Handling:**
+    *   **Rule:** All functions must implement robust error handling using `try...except` blocks.
+    *   **Implementation:**
+        *   **Specific Exceptions:** Catch specific exception types whenever possible (e.g., `FileNotFoundError`, `TypeError`, `ValueError`, `requests.exceptions.RequestException`). Avoid catching generic `Exception` unless absolutely necessary.
+        *   **Recovery Logic:** Implement error recovery logic where feasible. For example, retry failed API calls, use default values from a cache, or gracefully degrade functionality.
+        *   **Custom Exceptions:** Define a custom exception hierarchy for application-specific errors. This will improve error reporting and handling.
+        *   **Re-raising Exceptions:** If an exception cannot be fully handled within a function, re-raise it after logging the error. This ensures that the error is propagated to a higher level where it can be handled appropriately (`raise`).
+        *   **Resource Cleanup:** Use `finally` blocks to ensure that resources (e.g., files, network connections) are always released, even if an exception occurs.
+        *   **Logging:** Log all exceptions with sufficient detail to facilitate debugging. Include the exception type, message, traceback, and any relevant context. Use the `self.logger` object for logging.
+        *   **Example:**
+            ```python
+            try:
+                data = self._fetch_data_from_api(url)
+                processed_data = self._process_data(data)
+                return processed_data
+            except requests.exceptions.RequestException as e:
+                self.logger.error(f"API request failed: {e}")
+                # Attempt to retrieve data from cache
+                cached_data = self._get_cached_data(url)
+                if cached_data:
+                    self.logger.info("Using cached data.")
+                    return cached_data
+                else:
+                    self.logger.error("No cached data available.")
+                    raise  # Re-raise the exception
+            except ValueError as e:
+                self.logger.error(f"Data processing error: {e}")
+                return None  # Or raise, depending on the context
+            finally:
+                self._cleanup_resources()
+            ```
+
+2.  **Input Validation and Sanitization:**
+    *   **Rule:** All input data (both external and internal) must be validated and sanitized to prevent errors and security vulnerabilities.
+    *   **Implementation:**
+        *   **Data Types:** Verify that input data is of the expected type.
+        *   **Length Checks:** Enforce minimum and maximum lengths for strings and lists.
+        *   **Range Checks:** Ensure that numerical values fall within acceptable ranges.
+        *   **Format Validation:** Use regular expressions to validate complex data formats (e.g., email addresses, URLs).
+        *   **Sanitization:** Sanitize input data to remove or escape potentially harmful characters (e.g., HTML tags, SQL injection attempts). Use libraries like `bleach` for HTML sanitization.
+        *   **Pydantic:** Use Pydantic models to define data structures and enforce validation rules.
+        *   **Example:**
+            ```python
+            from pydantic import BaseModel, validator
+
+            class UserInput(BaseModel):
+                name: str
+                email: str
+                age: int
+
+                @validator('name')
+                def validate_name(cls, name):
+                    if not (3 <= len(name) <= 50):
+                        raise ValueError("Name must be between 3 and 50 characters.")
+                    if not re.match(r"^[a-zA-Z\s]+$", name):
+                        raise ValueError("Name must contain only letters and spaces.")
+                    return name
+
+                @validator('email')
+                def validate_email(cls, email):
+                    if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+                        raise ValueError("Invalid email format.")
+                    return email
+
+                @validator('age')
+                def validate_age(cls, age):
+                    if not (0 <= age <= 120):
+                        raise ValueError("Age must be between 0 and 120.")
+                    return age
+
+            try:
+                user_input = UserInput(name="John Doe", email="john.doe@example.com", age=30)
+            except ValueError as e:
+                self.logger.error(f"Invalid user input: {e}")
+                # Handle the validation error
+            ```
+
+3.  **Configuration Management:**
+    *   **Rule:** All configurable values (e.g., URLs, API keys, file paths, repository names) must be stored in `config.py` or environment variables.
+    *   **Implementation:**
+        *   **`config.py`:** Use `config.py` for project-specific configuration values.
+        *   **Environment Variables:** Use environment variables for sensitive information (e.g., API keys, passwords) and deployment-specific settings.
+        *   **Accessing Configuration:** Access configuration values using the `Config` class or `os.environ`.
+        *   **Example:**
+            ```python
+            # config.py
+            class Config:
+                API_URL = "https://example.com/api"
+                API_KEY = os.environ.get("API_KEY")
+                LOG_LEVEL = "INFO"
+
+            # In your code
+            from .config import Config
+            api_url = Config.API_URL
+            api_key = Config.API_KEY
+            ```
+
+4.  **Asynchronous Programming:**
+    *   **Rule:** Use asynchronous programming (`async` and `await`) for I/O-bound operations to improve performance and responsiveness.
+    *   **Implementation:**
+        *   **`async` and `await`:** Use `async` to define asynchronous functions and `await` to call asynchronous functions.
+        *   **`asyncio.gather`:** Use `asyncio.gather` to run multiple asynchronous tasks concurrently.
+        *   **Locking Mechanisms:** Use `asyncio.Lock` to protect shared resources from concurrent access.
+        *   **Avoid Blocking Operations:** Avoid performing blocking operations (e.g., synchronous I/O) in asynchronous functions.
+        *   **Example:**
+            ```python
+            import asyncio
+
+            async def fetch_data(url):
+                # Asynchronously fetch data from a URL
+                await asyncio.sleep(1)  # Simulate I/O-bound operation
+                return f"Data from {url}"
+
+            async def main():
+                urls = ["https://example.com/api1", "https://example.com/api2"]
+                tasks = [fetch_data(url) for url in urls]
+                results = await asyncio.gather(*tasks)
+                print(results)
+
+            if __name__ == "__main__":
+                asyncio.run(main())
+            ```
+
+**II. Testing and Quality Assurance:**
+
+*   **A. Test Strategy:**
+    *   Write a mix of unit, integration, and end-to-end tests.
+    *   Prioritize testing edge cases and error conditions.
+    *   Aim for meaningful test coverage (80%+).
+    *   Use test-driven development (TDD).
+*   **B. Mocking Appropriately:** Reduce mocking, especially of internal functions. Increase integration test coverage.
+*   **C. Test Organization:** Test classes should *test* service classes, not *be* them. Use pytest fixtures for setup and teardown. Organize tests into functions, not classes with constructors. Avoid inheriting from service classes in test classes.
+
+**III. Code Structure and Design:**
+
+*   **A. Agent Workflow (`agent_utils.py`):** Refactor `search_node` for readability and maintainability. Clearly separate handling of `AgentAction` and `AgentFinish`. Use helper functions. Ensure correct handling of `intermediate_steps`. Add comprehensive logging. Explain the intended flow step-by-step.
+*   **B. `DocumentStore`:** Implement the `add_document` method.
+*   **C. Web Scraping:** Prioritize official APIs. If scraping is necessary, use robust parsing techniques (e.g., `BeautifulSoup` with error handling). Implement retry mechanisms and handle network errors. Monitor scraped websites for changes. Consider caching scraped data.
+*   **D. Maintainer Agent:** Break down the `MaintainerAgent` into smaller, focused classes (e.g., `DocumentationAnalyzer`, `PricingUpdater`, `IssueTracker`).
+
+**IV. DevOps and MLOps:**
+
+*   **A. CI/CD Integration:**
+    *   Set up a CI/CD pipeline (e.g., GitHub Actions).
+    *   Trigger the pipeline on every push.
+    *   Use code quality tools (linters, static analyzers).
+    *   Automate deployment.
+*   **B. Monitoring and Alerting:**
+    *   Use Prometheus extensively.
+    *   Track key metrics (accuracy, latency, throughput, error rates).
+    *   Set up alerts for performance degradation.
+    *   Use a dashboarding tool (e.g., Grafana).
+*   **C. Model Versioning and Rollback:**
+    *   Use a model registry (e.g., MLflow, DVC).
+    *   Implement a robust rollback mechanism.
+    *   Automate rollback based on performance metrics.

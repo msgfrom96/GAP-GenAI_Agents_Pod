@@ -1,0 +1,1 @@
+{"OpenAI": {"gpt-3.5-turbo": {"prompt": 0.0015, "completion": 0.002}, "gemini-1.0-pro": {"prompt": 0.00025, "completion": 0.0005}}, "Google": {"gpt-3.5-turbo": {"prompt": 0.0015, "completion": 0.002}, "gemini-1.0-pro": {"prompt": 0.00025, "completion": 0.0005}}}
